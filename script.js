@@ -1,101 +1,113 @@
-// Wait for full DOM
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function () {
 
-  const gallery = document.getElementById('gallery');
-  const lightbox = document.getElementById('lightbox');
-  const lightboxImg = document.getElementById('lightboxImg');
-  const lightboxTitle = document.getElementById('lightboxTitle');
-  const lightboxSubtitle = document.getElementById('lightboxSubtitle');
-  const closeBtn = document.getElementById('closeBtn');
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
+  const lightbox            = document.getElementById('lightbox');
+  const lightboxImg         = document.getElementById('lightboxImg');
+  const lightboxTitle       = document.getElementById('lightboxTitle');
+  const lightboxSubtitle    = document.getElementById('lightboxSubtitle');
+  const closeBtn            = document.getElementById('closeBtn');
+  const prevBtn             = document.getElementById('prevBtn');
+  const nextBtn             = document.getElementById('nextBtn');
   const thumbnailsContainer = document.getElementById('thumbnails');
 
-  // Always re-query cards AFTER DOM is ready — never rely on order from outside
-  const cards = Array.from(document.querySelectorAll('.card'));
-
+  const cards = Array.from(document.querySelectorAll('#gallery .card'));
   let currentIndex = 0;
 
-  // ── Re-stamp data-index to match exact DOM order, no assumptions ──
-  cards.forEach((card, i) => {
+  // ── Force-stamp correct index on every card ──
+  cards.forEach(function (card, i) {
     card.setAttribute('data-index', i);
+
+    // ── CRITICAL FIX: remove lazy loading so ALL images load upfront ──
+    const img = card.querySelector('img');
+    if (img) {
+      img.removeAttribute('loading');          // removes lazy
+      img.setAttribute('loading', 'eager');    // force eager load
+
+      const loader = card.querySelector('.loader');
+      function markLoaded() {
+        img.classList.add('loaded');
+        if (loader) loader.style.display = 'none';
+      }
+      if (img.complete) {
+        markLoaded();
+      } else {
+        img.addEventListener('load', markLoaded);
+        img.addEventListener('error', function () {
+          if (loader) loader.style.display = 'none';
+        });
+      }
+    }
   });
 
-  // ── Build thumbnails fresh ──
+  // ── Build thumbnails ──
   thumbnailsContainer.innerHTML = '';
-  cards.forEach((card, i) => {
+  cards.forEach(function (card, i) {
+    const src   = card.getAttribute('data-source');
+    const title = card.getAttribute('data-title') || '';
     const thumb = document.createElement('img');
-    thumb.src = card.getAttribute('data-source');
-    thumb.alt = card.getAttribute('data-title') || '';
-    thumb.classList.add('thumbnail');
+    thumb.src           = src;
+    thumb.alt           = title;
+    thumb.className     = 'thumbnail';
     thumb.dataset.index = i;
     thumbnailsContainer.appendChild(thumb);
 
-    thumb.addEventListener('click', () => {
+    thumb.addEventListener('click', function () {
       currentIndex = i;
       updateLightbox();
       updateThumbnails();
     });
   });
 
-  // ── Image load handling (covers cached images too) ──
-  cards.forEach(card => {
-    const img = card.querySelector('img');
-    const loader = card.querySelector('.loader');
-    if (!img) return;
-
-    const markLoaded = () => {
-      img.classList.add('loaded');
-      if (loader) loader.style.display = 'none';
-    };
-
-    if (img.complete && img.naturalWidth > 0) {
-      markLoaded(); // already cached
-    } else {
-      img.addEventListener('load', markLoaded);
-      img.addEventListener('error', () => {
-        if (loader) loader.style.display = 'none';
-      });
-    }
-  });
-
-  // ── Card click: always read data-index from the element ──
-  cards.forEach(card => {
-    card.addEventListener('click', e => {
+  // ── Card click ──
+  cards.forEach(function (card) {
+    card.addEventListener('click', function (e) {
       e.preventDefault();
       currentIndex = parseInt(card.getAttribute('data-index'), 10);
       openLightbox();
     });
   });
 
-  // ── Lightbox functions ──
+  // ── Open / close ──
   function openLightbox() {
     updateLightbox();
     updateThumbnails();
     lightbox.classList.add('open');
-    lightbox.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
   }
 
   function closeLightbox() {
     lightbox.classList.remove('open');
-    lightbox.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
-    lightboxImg.src = '';
   }
 
+  // ── Update lightbox image — preload first to avoid blank flash ──
   function updateLightbox() {
     const card = cards[currentIndex];
     if (!card) return;
-    lightboxImg.src = card.getAttribute('data-source');
-    lightboxImg.alt = card.getAttribute('data-title') || '';
-    lightboxTitle.textContent = card.getAttribute('data-title') || '';
-    lightboxSubtitle.textContent = card.getAttribute('data-subtitle') || '';
+
+    const src      = card.getAttribute('data-source');
+    const title    = card.getAttribute('data-title') || '';
+    const subtitle = card.getAttribute('data-subtitle') || '';
+
+    // Preload into a temporary Image object first,
+    // then assign to the visible <img> — guarantees no blank frame
+    const preloader = new Image();
+    preloader.onload = function () {
+      lightboxImg.src = src;
+    };
+    preloader.onerror = function () {
+      lightboxImg.src = src; // show anyway even if broken
+    };
+    preloader.src = src;
+
+    // Set title immediately — doesn't need to wait for image
+    if (lightboxTitle)    lightboxTitle.textContent    = title;
+    if (lightboxSubtitle) lightboxSubtitle.textContent = subtitle;
   }
 
+  // ── Sync thumbnail highlight ──
   function updateThumbnails() {
     const thumbs = thumbnailsContainer.querySelectorAll('.thumbnail');
-    thumbs.forEach(t => t.classList.remove('active'));
+    thumbs.forEach(function (t) { t.classList.remove('active'); });
     const active = thumbs[currentIndex];
     if (active) {
       active.classList.add('active');
@@ -103,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ── Navigation ──
   function showNext() {
     currentIndex = (currentIndex + 1) % cards.length;
     updateLightbox();
@@ -115,34 +128,29 @@ document.addEventListener('DOMContentLoaded', () => {
     updateThumbnails();
   }
 
-  // ── Button listeners ──
   closeBtn.addEventListener('click', closeLightbox);
-  nextBtn.addEventListener('click', showNext);
-  prevBtn.addEventListener('click', showPrev);
+  nextBtn.addEventListener('click',  showNext);
+  prevBtn.addEventListener('click',  showPrev);
 
-  // Click outside content to close
-  lightbox.addEventListener('click', e => {
+  lightbox.addEventListener('click', function (e) {
     if (e.target === lightbox) closeLightbox();
   });
 
-  // Keyboard navigation
-  window.addEventListener('keydown', e => {
+  window.addEventListener('keydown', function (e) {
     if (!lightbox.classList.contains('open')) return;
-    if (e.key === 'Escape')      closeLightbox();
-    if (e.key === 'ArrowRight')  showNext();
-    if (e.key === 'ArrowLeft')   showPrev();
+    if (e.key === 'Escape')     closeLightbox();
+    if (e.key === 'ArrowRight') showNext();
+    if (e.key === 'ArrowLeft')  showPrev();
   });
 
-  // Touch/swipe support for mobile
-  let touchStartX = 0;
-  lightbox.addEventListener('touchstart', e => {
+  // ── Swipe support ──
+  var touchStartX = 0;
+  lightbox.addEventListener('touchstart', function (e) {
     touchStartX = e.changedTouches[0].screenX;
   }, { passive: true });
-  lightbox.addEventListener('touchend', e => {
-    const diff = touchStartX - e.changedTouches[0].screenX;
-    if (Math.abs(diff) > 50) {
-      diff > 0 ? showNext() : showPrev();
-    }
+  lightbox.addEventListener('touchend', function (e) {
+    var diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) diff > 0 ? showNext() : showPrev();
   }, { passive: true });
 
 });
