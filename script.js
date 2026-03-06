@@ -21,13 +21,14 @@ cards.forEach((card, index) => {
   thumb.addEventListener('click', () => {
     currentIndex = parseInt(thumb.dataset.index);
     updateLightbox();
+    updateThumbnails(); // ← was missing: thumbnail click didn't highlight active
   });
 });
 
 cards.forEach((card, index) => {
   card.addEventListener('click', e => {
     e.preventDefault();
-    currentIndex = index;
+    currentIndex = parseInt(card.getAttribute('data-index')); // ← was: index (caused mismatch)
     openLightbox();
   });
 
@@ -43,7 +44,7 @@ cards.forEach((card, index) => {
 function openLightbox() {
   updateLightbox();
   lightbox.classList.add('open');
-  updateThumbnails();
+  updateThumbnails(); // ← was missing: thumbnails never synced on open
 }
 
 function updateLightbox() {
