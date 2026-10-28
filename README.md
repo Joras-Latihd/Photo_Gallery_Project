@@ -54,11 +54,9 @@ This project showcases modern design with a clean grid layout, smooth hover anim
 
 ## 📸 **Screenshots:**
 **Homepage**
-![alt text](https://github.com/Git-Hub-dot/Photo_Gallery_Project/blob/4b7f91c4bccaf5ba7df87bff4abf75bb934f0f31/Homepage.png)
-**During Hover**
-![alt text](https://github.com/Git-Hub-dot/Photo_Gallery_Project/blob/4b7f91c4bccaf5ba7df87bff4abf75bb934f0f31/During%20Hover.png)
+![alt text](https://github.com/Joras-Latihd/Photo_Gallery_Project/blob/3db8dea230e1a5f40fbff7b7d887467ec2edc38e/Updated%20Homepage.png)
 **Individual Image**
-![alt text](https://github.com/Git-Hub-dot/Photo_Gallery_Project/blob/4b7f91c4bccaf5ba7df87bff4abf75bb934f0f31/Individual%20Image.png)
+![alt text](https://github.com/Joras-Latihd/Photo_Gallery_Project/blob/3db8dea230e1a5f40fbff7b7d887467ec2edc38e/Updated%20Individual%20Image.png)
 ***
 
 
